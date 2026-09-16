@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="800"
+viewBox="0 0 170 132" shape-rendering="geometricPrecision">
+  <rect width="170" height="132" fill="#FFF9D9"/>
+
+  <g stroke="#B66A09" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round">
+    <!-- top rear yellow cube -->
+    <polygon points="61,49 85,34 101,43 77,58"
+             fill="#FFD74F"/>
+    <polygon points="61,49 77,58 77,76 61,67"
+             fill="#FFD34A"/>
+    <polygon points="77,58 101,43 101,61 77,76"
+             fill="#FFC63E"/>
+
+    <!-- left yellow block -->
+    <polygon points="38,64 54,55 86,73 70,83"
+             fill="#FFD74F"/>
+    <polygon points="38,64 70,83 70,104 38,87"
+             fill="#FFD34A"/>
+    <polygon points="70,83 86,73 86,94 70,104"
+             fill="#FFC63E"/>
+
+    <!-- center upper orange block -->
+    <polygon points="70,73 86,64 102,73 86,83"
+             fill="#FFA13B"/>
+    <polygon points="70,73 86,83 86,101 70,92"
+             fill="#FFB13F"/>
+    <polygon points="86,83 102,73 102,92 86,101"
+             fill="#FF8E2F"/>
+
+    <!-- right orange block -->
+    <polygon points="86,73 117,54 134,64 102,83"
+             fill="#FFA13B"/>
+    <polygon points="86,73 102,83 102,113 86,104"
+             fill="#FFB13F"/>
+    <polygon points="102,83 134,64 134,94 102,113"
+             fill="#FF8E2F"/>
+
+    <!-- lower middle orange/yellow cube -->
+    <polygon points="70,92 86,83 102,92 86,102"
+             fill="#FFB33F"/>
+    <polygon points="70,92 86,102 86,119 70,110"
+             fill="#FFC13F"/>
+    <polygon points="86,102 102,92 102,110 86,119"
+             fill="#FF9632"/>
+  </g>
+</svg>
