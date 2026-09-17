@@ -11,7 +11,7 @@ def flow_key(packet: Packet) -> tuple[str, str, int | None, int | None, str]:
         packet.protocol,
     )
 
-def sessionize(packets: list[Packet]) ->  List[Flow]:
+def sessionize(packets: list[Packet]) ->  list[Flow]:
     flows_dict = {}
     for packet in packets:
        ## false into the same conversation
