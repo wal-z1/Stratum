@@ -8,7 +8,21 @@ from pydantic import BaseModel, Field
 Protocol = Literal["TCP", "UDP", "ICMP", "OTHER"]
 Severity = Literal["critical", "high", "medium", "low", "info"]
 Status = Literal["fail", "warn", "pass", "info"]
-EventSource = Literal["dns", "http", "tls", "tcp"]
+from typing import Literal
+
+EventSource = Literal[
+    "http",
+    "dns",
+    "dhcp",
+    "arp",
+    "icmp",
+    "tcp",
+    "tls",
+    "smtp",
+    "ftp",
+    "imap",
+    "smb",
+]
 Confidence = Literal["low", "medium", "high"]
 
 class Packet(BaseModel):
@@ -19,8 +33,8 @@ class Packet(BaseModel):
     src_port: int | None = None
     dst_port: int | None = None
     protocol: Protocol
-    length: int
-    payload: bytes | None = None  # raw bytes
+    payload: bytes | None = None
+    tcp_flags: int = 0
 
 class Flow(BaseModel):
     flow_id: str                    #hash
@@ -39,7 +53,7 @@ class Event(BaseModel):
     id: str
     ts: float
     source: EventSource
-    kind: str                        # depends on the source 
+    kind: str                        # depends on the source
     summary: str
     details: dict[str, Any] = Field(default_factory=dict)
     flow_id: str | None = None

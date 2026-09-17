@@ -1,4 +1,4 @@
-from .models import Flow, Packet,Event, Finding, Timeline
+from .models import Flow, Packet, Event, Finding, Timeline
 import dpkt
 import dpkt.utils
 
@@ -7,7 +7,7 @@ import dpkt.utils
 def export_http_flows(flow:Flow) ->list[Event]:
   events = []
   for packet in flow.packets:
-    if packet.protocol == "TCP" and packet.payload:
+    if packet.protocol == "TCP" and isinstance(packet.payload, bytes):
       try:
         http = dpkt.http.Request(packet.payload)
         event = Event(
@@ -27,10 +27,11 @@ def export_http_flows(flow:Flow) ->list[Event]:
         continue
   return events
 
+
 def export_dns_flows(flow:Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
-    if packet.protocol == "UDP" and packet.payload:
+    if packet.protocol == "UDP" and isinstance(packet.payload, bytes):
       try:
         dns = dpkt.dns.DNS(packet.payload)
         if dns.qr == dpkt.dns.DNS_Q and dns.opcode == dpkt.dns.DNS_QUERY:
@@ -52,20 +53,22 @@ def export_dns_flows(flow:Flow) -> list[Event]:
         continue
   return events
 
+
 def export_dhcp_flows(flow:Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
-    if packet.protocol == "UDP" and packet.payload:
+    if packet.protocol == "UDP" and isinstance(packet.payload, bytes):
       try:
         dhcp = dpkt.dhcp.DHCP(packet.payload)
+
         event = Event(
           id=f"{flow.flow_id}-{packet.packet_id}",
           ts=packet.ts,
           source="dhcp",
           kind="message",
-          summary=f"DHCP message type {dhcp.op}",
+          summary=f"DHCP message type {getattr(dhcp, 'op', 0)}",
           details={
-            "options": dhcp.opts
+            "options": getattr(dhcp, "opts", [])
           },
           flow_id=flow.flow_id
         )
@@ -74,18 +77,20 @@ def export_dhcp_flows(flow:Flow) -> list[Event]:
         continue
   return events
 
+
 def export_arp_flows(flow:Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
-    if packet.protocol == "OTHER" and packet.payload:
+    if packet.protocol == "OTHER" and isinstance(packet.payload, bytes):
       try:
         arp = dpkt.arp.ARP(packet.payload)
+
         event = Event(
           id=f"{flow.flow_id}-{packet.packet_id}",
           ts=packet.ts,
           source="arp",
           kind="message",
-          summary=f"ARP message type {arp.op}",
+          summary=f"ARP message type {getattr(arp, 'op', 0)}",
           details={
             "sender_ip": dpkt.utils.inet_to_str(arp.spa),
             "target_ip": dpkt.utils.inet_to_str(arp.tpa),
@@ -99,12 +104,14 @@ def export_arp_flows(flow:Flow) -> list[Event]:
         continue
   return events
 
+
 def export_icmp_flows(flow:Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
-    if packet.protocol == "ICMP" and packet.payload:
+    if packet.protocol == "ICMP" and isinstance(packet.payload, bytes):
       try:
         icmp = dpkt.icmp.ICMP(packet.payload)
+
         event = Event(
           id=f"{flow.flow_id}-{packet.packet_id}",
           ts=packet.ts,
@@ -122,23 +129,37 @@ def export_icmp_flows(flow:Flow) -> list[Event]:
         continue
   return events
 
+
 def export_tcp_flags(flow:Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
     if packet.protocol == "TCP":
+
+      tcp_flags = getattr(packet, "tcp_flags", 0)
+
+      if tcp_flags is None:
+        tcp_flags = 0
+
       flags = []
-      if packet.tcp_flags & dpkt.tcp.TH_SYN:
+
+      if tcp_flags & dpkt.tcp.TH_SYN:
         flags.append("SYN")
-      if packet.tcp_flags & dpkt.tcp.TH_ACK:
+
+      if tcp_flags & dpkt.tcp.TH_ACK:
         flags.append("ACK")
-      if packet.tcp_flags & dpkt.tcp.TH_FIN:
+
+      if tcp_flags & dpkt.tcp.TH_FIN:
         flags.append("FIN")
-      if packet.tcp_flags & dpkt.tcp.TH_RST:
+
+      if tcp_flags & dpkt.tcp.TH_RST:
         flags.append("RST")
-      if packet.tcp_flags & dpkt.tcp.TH_PUSH:
+
+      if tcp_flags & dpkt.tcp.TH_PUSH:
         flags.append("PSH")
-      if packet.tcp_flags & dpkt.tcp.TH_URG:
+
+      if tcp_flags & dpkt.tcp.TH_URG:
         flags.append("URG")
+
       if flags:
         event = Event(
           id=f"{flow.flow_id}-{packet.packet_id}",
@@ -152,23 +173,26 @@ def export_tcp_flags(flow:Flow) -> list[Event]:
           flow_id=flow.flow_id
         )
         events.append(event)
+
   return events
+
 
 def export_tls_flows(flow:Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
-    if packet.protocol == "TCP" and packet.payload:
+    if packet.protocol == "TCP" and isinstance(packet.payload, bytes):
       try:
         tls = dpkt.ssl.TLS(packet.payload)
+
         event = Event(
           id=f"{flow.flow_id}-{packet.packet_id}",
           ts=packet.ts,
           source="tls",
           kind="message",
-          summary=f"TLS message type {tls.type}",
+          summary=f"TLS message type {getattr(tls, 'type', 0)}",
           details={
-            "version": tls.version,
-            "length": tls.length
+            "version": getattr(tls, "version", None),
+            "length": getattr(tls, "length", None)
           },
           flow_id=flow.flow_id
         )
@@ -177,11 +201,14 @@ def export_tls_flows(flow:Flow) -> list[Event]:
         continue
   return events
 
+
 def export_smtp_ftp_imap_flows(flow:Flow) -> list[Event]:
   events = []
+
   for packet in flow.packets:
-    if packet.protocol == "TCP" and packet.payload:
+    if packet.protocol == "TCP" and isinstance(packet.payload, bytes):
       try:
+
         # Check for SMTP
         if packet.payload.startswith(b"220") or packet.payload.startswith(b"250"):
           event = Event(
@@ -196,6 +223,7 @@ def export_smtp_ftp_imap_flows(flow:Flow) -> list[Event]:
             flow_id=flow.flow_id
           )
           events.append(event)
+
         # Check for FTP
         elif packet.payload.startswith(b"220") or packet.payload.startswith(b"331"):
           event = Event(
@@ -210,6 +238,7 @@ def export_smtp_ftp_imap_flows(flow:Flow) -> list[Event]:
             flow_id=flow.flow_id
           )
           events.append(event)
+
         # Check for IMAP
         elif packet.payload.startswith(b"* OK") or packet.payload.startswith(b"* NO"):
           event = Event(
@@ -224,32 +253,37 @@ def export_smtp_ftp_imap_flows(flow:Flow) -> list[Event]:
             flow_id=flow.flow_id
           )
           events.append(event)
+
       except (dpkt.UnpackError, dpkt.NeedData):
         continue
+
   return events
+
 
 def export_smb_flows(flow:Flow) -> list[Event]:
   events = []
+
   for packet in flow.packets:
-    if packet.protocol == "TCP" and packet.payload:
+    if packet.protocol == "TCP" and isinstance(packet.payload, bytes):
       try:
         smb = dpkt.smb.SMB(packet.payload)
+
         event = Event(
           id=f"{flow.flow_id}-{packet.packet_id}",
           ts=packet.ts,
           source="smb",
           kind="message",
-          summary=f"SMB message type {smb.command}",
+          summary=f"SMB message type {getattr(smb, 'command', 0)}",
           details={
-            "command": smb.command,
-            "flags": smb.flags,
-            "flags2": smb.flags2
+            "command": getattr(smb, "command", None),
+            "flags": getattr(smb, "flags", None),
+            "flags2": getattr(smb, "flags2", None)
           },
           flow_id=flow.flow_id
         )
         events.append(event)
+
       except (dpkt.UnpackError, dpkt.NeedData):
         continue
+
   return events
-
-
