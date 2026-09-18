@@ -1,6 +1,8 @@
 import type { AnalysisResponse } from "@/types/analysis";
 
-const DEFAULT_API = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const DEFAULT_API =
+	import.meta.env.VITE_API_URL ||
+	(import.meta.env.PROD ? "" : "http://127.0.0.1:8000");
 
 export async function analyzeCapture(
 	file: File,
@@ -15,11 +17,13 @@ export async function analyzeCapture(
 	});
 
 	const data = await response.json().catch(() => null);
+
 	if (!response.ok) {
 		const message =
 			data && typeof data === "object" && "detail" in data
 				? String(data.detail)
 				: "Analysis failed";
+
 		throw new Error(message);
 	}
 
