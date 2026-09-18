@@ -45,4 +45,13 @@ def build_response(findings: list[Finding], packets: list, flows: list, events: 
         },
         "count": len(findings),
         "findings": [finding.model_dump() for finding in findings],
+        "packets": [
+            packet.model_dump(exclude={"payload"})
+            for packet in packets
+        ],
+        "flows": [
+            flow.model_dump(exclude={"packets"})
+            for flow in flows
+        ],
+        "events": [event.model_dump() for event in events],
     }

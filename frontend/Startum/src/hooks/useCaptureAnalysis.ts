@@ -1,9 +1,13 @@
 import { useMemo, useRef, useState } from "react";
 
-import { analyzeCapture, sampleCaptureUrl } from "@/lib/api";
+import { analyzeCapture } from "@/lib/api";
+import {
+	formatCaptureSize,
+	getCaptureExtension,
+	validateCapture,
+} from "@/lib/capture";
 import type { AnalysisResponse } from "@/types/analysis";
-
-const supportedExtensions = [".pcap", ".pcapng", ".cap"] as const;
+import type { SampleCapture } from "@/types/samples";
 
 export function useCaptureAnalysis() {
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -11,6 +15,7 @@ export function useCaptureAnalysis() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [isDragging, setIsDragging] = useState(false);
+
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
 	const fileInfo = useMemo(() => {
@@ -18,40 +23,53 @@ export function useCaptureAnalysis() {
 			return null;
 		}
 
+		const extension = getCaptureExtension(selectedFile.name);
+
 		return {
 			name: selectedFile.name,
-			size: (selectedFile.size / (1024 * 1024)).toFixed(2),
+			size: formatCaptureSize(selectedFile.size),
+			type: extension ? extension.replace(".", "").toUpperCase() : "CAPTURE",
 		};
 	}, [selectedFile]);
 
 	const validateFile = (file?: File | null) => {
 		if (!file) {
-			setSelectedFile(null);
 			return null;
 		}
 
-		const lowerName = file.name.toLowerCase();
-		if (
-			!supportedExtensions.some((extension) => lowerName.endsWith(extension))
-		) {
-			setError("Unsupported file type. Use a .pcap, .pcapng, or .cap capture.");
+		const validationError = validateCapture(file);
+
+		if (validationError) {
+			setError(validationError);
 			setSelectedFile(null);
+			setAnalysis(null);
 			return null;
 		}
 
 		setError(null);
 		setSelectedFile(file);
+		setAnalysis(null);
+
 		return file;
 	};
 
 	const runAnalysis = async (file: File) => {
+		const validationError = validateCapture(file);
+
+		if (validationError) {
+			setError(validationError);
+			return;
+		}
+
 		setIsLoading(true);
 		setError(null);
+
 		try {
 			const result = await analyzeCapture(file);
 			setAnalysis(result);
 		} catch (err) {
 			setAnalysis(null);
+
 			setError(
 				err instanceof Error
 					? err.message
@@ -66,31 +84,55 @@ export function useCaptureAnalysis() {
 		if (!selectedFile) {
 			return;
 		}
+
 		await runAnalysis(selectedFile);
 	};
 
-	const handleSample = async () => {
+	const analyzeSample = async (sample: SampleCapture) => {
+		if (sample.fetchMode !== "direct") {
+			setError(
+				"This external source is configured for manual download. Download the capture and drop it into Stratum.",
+			);
+			return;
+		}
+
 		setIsLoading(true);
 		setError(null);
+
 		try {
-			const response = await fetch(sampleCaptureUrl);
+			const response = await fetch(sample.downloadUrl, {
+				mode: "cors",
+			});
+
 			if (!response.ok) {
-				throw new Error("Sample capture download failed.");
+				throw new Error(
+					`Could not download ${sample.name} from the external source.`,
+				);
 			}
 
 			const blob = await response.blob();
-			const file = new File([blob], "http.pcap", {
-				type: "application/octet-stream",
+
+			const file = new File([blob], sample.name, {
+				type: blob.type || "application/octet-stream",
 			});
+
+			const validationError = validateCapture(file);
+
+			if (validationError) {
+				throw new Error(validationError);
+			}
+
 			setSelectedFile(file);
+
 			const result = await analyzeCapture(file);
 			setAnalysis(result);
 		} catch (err) {
 			setAnalysis(null);
+
 			setError(
 				err instanceof Error
 					? err.message
-					: "The sample capture could not be analyzed.",
+					: "The external sample could not be analyzed.",
 			);
 		} finally {
 			setIsLoading(false);
@@ -101,12 +143,14 @@ export function useCaptureAnalysis() {
 		setSelectedFile(null);
 		setAnalysis(null);
 		setError(null);
+
 		if (fileInputRef.current) {
 			fileInputRef.current.value = "";
 		}
 	};
 
 	const findings = analysis?.findings ?? [];
+
 	const sortedFindings = [...findings].sort((a, b) => {
 		const priorities = {
 			critical: 0,
@@ -129,10 +173,11 @@ export function useCaptureAnalysis() {
 		fileInfo,
 		findings,
 		sortedFindings,
+
 		setIsDragging,
 		validateFile,
 		analyzeSelected,
-		handleSample,
+		analyzeSample,
 		clearSelection,
 	};
 }
