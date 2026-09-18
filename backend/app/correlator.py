@@ -59,7 +59,7 @@ def link_dns_to_connections(events: list[Event]) -> list[Event]:
     if not index:
         return events
     for ev in events:
-        if ev.source not in ("http", "tls", "ssh", "tcp"):
+        if ev.source not in ("http", "tls", "tcp"):
             continue
         client = ev.details.get("client_ip")
         dst = ev.details.get("dst_ip") or ev.details.get("server_ip")

@@ -1,4 +1,4 @@
-from .models import Flow, Packet, Event, Finding, Timeline
+from .models import Flow, Packet, Event, Finding
 import dpkt
 import dpkt.utils
 
@@ -51,6 +51,12 @@ def export_dns_flows(flow:Flow) -> list[Event]:
             events.append(event)
         elif dns.qr == dpkt.dns.DNS_R and dns.opcode == dpkt.dns.DNS_QUERY:
           for answer in dns.an:
+            answer_ip = None
+            if getattr(answer, "ip", None):
+              answer_ip = dpkt.utils.inet_to_str(answer.ip)
+            elif getattr(answer, "ip6", None):
+              answer_ip = dpkt.utils.inet_to_str(answer.ip6)
+
             event = Event(
               id=f"{flow.flow_id}-{packet.packet_id}",
               ts=packet.ts,
@@ -58,10 +64,17 @@ def export_dns_flows(flow:Flow) -> list[Event]:
               kind="response",
               summary=f"DNS response for {answer.name}",
               details={
+                "name": answer.name,
                 "type": answer.type,
                 "class": answer.cls,
                 "ttl": answer.ttl,
-                "data": answer.data
+                "data": answer.data,
+                "answers": [
+                  {
+                    "name": answer.name,
+                    "ip": answer_ip
+                  }
+                ]
               },
               flow_id=flow.flow_id
             )

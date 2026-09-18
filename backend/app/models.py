@@ -70,6 +70,3 @@ class Finding(BaseModel):
     detail: str
     evidence: list[str] = Field(default_factory=list)
 
-class Timeline(BaseModel):
-    events: list[Event] = Field(default_factory=list)
-    flows: list[Flow] = Field(default_factory=list)
