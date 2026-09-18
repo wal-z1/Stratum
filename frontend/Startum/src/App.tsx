@@ -33,21 +33,29 @@ function App() {
 
 	return (
 		<AppShell>
-			<section id="overview" className="space-y-10 sm:space-y-12">
-				<div className="space-y-3">
-					<p className="eyebrow">Network capture intelligence</p>
-					<h1 className="max-w-4xl text-4xl font-semibold tracking-[-0.06em] text-[var(--text)] sm:text-6xl">
-						See the structure inside suspicious traffic.
-					</h1>
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-						<p className="max-w-2xl text-base leading-7 text-[var(--muted)]">
-							Upload a packet capture to inspect flows, protocol events,
-							correlations, and detector findings through the Stratum analysis
-							pipeline.
+			<section id="overview" className="space-y-8 sm:space-y-10">
+				<div className="hero-grid">
+					<div className="hero-copy">
+						<p className="eyebrow">Network capture analysis</p>
+
+						<h1 className="hero-title">
+							PCAP analysis,
+							<br />
+							without the noise.
+						</h1>
+
+						<p className="hero-description">
+							Inspect flows, protocol activity, hosts, and security findings
+							from a single capture.
 						</p>
-						<p className="max-w-xs border-l-2 border-[var(--accent)] pl-4 text-sm font-semibold leading-6 text-[var(--accent-strong)]">
-							Trace packets. Find patterns. Make the signal visible.
-						</p>
+					</div>
+
+					<div className="hero-art" aria-hidden="true">
+						<img
+							src="/blocks_transparent.png"
+							alt=""
+							className="hero-art-image"
+						/>
 					</div>
 				</div>
 
