@@ -59,8 +59,8 @@ function App() {
 						Network capture analysis for suspicious traffic
 					</h1>
 					<p className="max-w-2xl text-base leading-7 text-slate-300">
-						Upload a packet capture and inspect the real parser, sessions, events, and
-						detector findings.
+						Upload a packet capture and inspect the real parser, sessions,
+						events, and detector findings.
 					</p>
 				</div>
 

@@ -12,8 +12,7 @@ export function AppHeader() {
 					href="https://github.com/wal-z1/LODE"
 					target="_blank"
 					rel="noreferrer"
-					className="transition-colors hover:text-slate-50"
-				>
+					className="transition-colors hover:text-slate-50">
 					GitHub
 				</a>
 			</nav>

@@ -31,7 +31,9 @@ export function useCaptureAnalysis() {
 		}
 
 		const lowerName = file.name.toLowerCase();
-		if (!supportedExtensions.some((extension) => lowerName.endsWith(extension))) {
+		if (
+			!supportedExtensions.some((extension) => lowerName.endsWith(extension))
+		) {
 			setError("Unsupported file type. Use a .pcap, .pcapng, or .cap capture.");
 			setSelectedFile(null);
 			return null;

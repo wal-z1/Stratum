@@ -41,8 +41,7 @@ export function CaptureDropzone({
 				)}
 				onDragOver={onDragOver}
 				onDragLeave={onDragLeave}
-				onDrop={onDrop}
-			>
+				onDrop={onDrop}>
 				<input
 					type="file"
 					accept=".pcap,.pcapng,.cap"
@@ -88,11 +87,14 @@ export function CaptureDropzone({
 				<Button
 					type="button"
 					onClick={onAnalyze}
-					disabled={!selectedFile || isLoading}
-				>
+					disabled={!selectedFile || isLoading}>
 					{isLoading ? "Analyzing capture..." : "Analyze capture"}
 				</Button>
-				<Button type="button" variant="secondary" onClick={onSample} disabled={isLoading}>
+				<Button
+					type="button"
+					variant="secondary"
+					onClick={onSample}
+					disabled={isLoading}>
 					Try Sample Capture
 				</Button>
 				{selectedFile ? (

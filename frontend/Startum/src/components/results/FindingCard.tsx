@@ -17,7 +17,11 @@ const severityStyles: Record<Finding["severity"], string> = {
 
 export function FindingCard({ finding }: FindingCardProps) {
 	return (
-		<Card className={cn("border bg-slate-950/60", severityStyles[finding.severity])}>
+		<Card
+			className={cn(
+				"border bg-slate-950/60",
+				severityStyles[finding.severity],
+			)}>
 			<CardContent className="space-y-4 p-4">
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<div className="flex flex-wrap items-center gap-2">
@@ -30,8 +34,12 @@ export function FindingCard({ finding }: FindingCardProps) {
 				</div>
 
 				<div>
-					<h3 className="text-xl font-semibold text-slate-50">{finding.title}</h3>
-					<p className="mt-2 text-sm leading-6 text-slate-200">{finding.detail}</p>
+					<h3 className="text-xl font-semibold text-slate-50">
+						{finding.title}
+					</h3>
+					<p className="mt-2 text-sm leading-6 text-slate-200">
+						{finding.detail}
+					</p>
 				</div>
 
 				{finding.evidence.length > 0 ? (
