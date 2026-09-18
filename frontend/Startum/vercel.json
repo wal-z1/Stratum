@@ -1,0 +1,12 @@
+{
+	"services": {
+		"frontend": {
+			"root": "frontend/Startum",
+			"framework": "vite"
+		},
+		"backend": {
+			"root": "backend",
+			"entrypoint": "app.main:app"
+		}
+	}
+}
