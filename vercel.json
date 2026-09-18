@@ -1,12 +1,26 @@
 {
-	"services": {
-		"frontend": {
-			"root": "frontend/Startum",
-			"framework": "vite"
-		},
-		"backend": {
-			"root": "backend",
-			"entrypoint": "app.main:app"
-		}
-	}
+  "services": {
+    "frontend": {
+      "root": "frontend/Startum",
+      "framework": "vite"
+    },
+    "backend": {
+      "root": "backend",
+      "framework": "fastapi"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
+  ]
 }
