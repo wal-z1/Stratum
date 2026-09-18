@@ -49,35 +49,29 @@ def export_dns_flows(flow:Flow) -> list[Event]:
               flow_id=flow.flow_id
             )
             events.append(event)
-        elif dns.qr == dpkt.dns.DNS_R and dns.opcode == dpkt.dns.DNS_QUERY:
-          for answer in dns.an:
-            answer_ip = None
-            if getattr(answer, "ip", None):
-              answer_ip = dpkt.utils.inet_to_str(answer.ip)
-            elif getattr(answer, "ip6", None):
-              answer_ip = dpkt.utils.inet_to_str(answer.ip6)
-
-            event = Event(
-              id=f"{flow.flow_id}-{packet.packet_id}",
-              ts=packet.ts,
-              source="dns",
-              kind="response",
-              summary=f"DNS response for {answer.name}",
-              details={
-                "name": answer.name,
-                "type": answer.type,
-                "class": answer.cls,
-                "ttl": answer.ttl,
-                "data": answer.data,
-                "answers": [
-                  {
-                    "name": answer.name,
-                    "ip": answer_ip
-                  }
-                ]
-              },
-              flow_id=flow.flow_id
-            )
+        elif dns.qr == dpkt.dns.DNS_R:
+        answers = []
+        for ans in dns.an:
+            ip = None
+            if getattr(ans, "ip", None):
+                ip = dpkt.utils.inet_to_str(ans.ip)
+            elif getattr(ans, "ip6", None):
+                ip = dpkt.utils.inet_to_str(ans.ip6)
+            answers.append({"name": ans.name, "ip": ip, "type": ans.type, "ttl": ans.ttl})
+        if answers:
+            events.append(Event(
+                id=f"{flow.flow_id}-{packet.packet_id}",
+                ts=packet.ts,
+                source="dns",
+                kind="response",
+                summary=f"DNS response for {answers[0]['name']}",
+                details={
+                    "name": dns.qd[0].name if dns.qd else answers[0]["name"],
+                    "rcode": dns.rcode,
+                    "answers": answers,
+                },
+                flow_id=flow.flow_id,
+            ))
             events.append(event)
       except (dpkt.UnpackError, dpkt.NeedData):
         continue

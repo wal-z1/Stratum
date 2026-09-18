@@ -18,7 +18,7 @@ def parse_one_packet(
         return None
 
     ip = eth.data
-
+    tcp_flags = 0
     src_port: int | None = None
     dst_port: int | None = None
 
@@ -35,6 +35,7 @@ def parse_one_packet(
                 transport = dpkt.tcp.TCP(transport_data)
                 src_port = transport.sport
                 dst_port = transport.dport
+                tcp_flags = transport.flags
                 payload = bytes(transport.data)
             elif protocol == "UDP":
                 transport = dpkt.udp.UDP(transport_data)
@@ -59,6 +60,7 @@ def parse_one_packet(
         src_port=src_port,
         dst_port=dst_port,
         protocol=protocol,
+        tcp_flags=tcp_flags,
         length=len(buf),
         payload=payload,
     )
