@@ -49,6 +49,23 @@ def export_dns_flows(flow:Flow) -> list[Event]:
               flow_id=flow.flow_id
             )
             events.append(event)
+        elif dns.qr == dpkt.dns.DNS_R and dns.opcode == dpkt.dns.DNS_QUERY:
+          for answer in dns.an:
+            event = Event(
+              id=f"{flow.flow_id}-{packet.packet_id}",
+              ts=packet.ts,
+              source="dns",
+              kind="response",
+              summary=f"DNS response for {answer.name}",
+              details={
+                "type": answer.type,
+                "class": answer.cls,
+                "ttl": answer.ttl,
+                "data": answer.data
+              },
+              flow_id=flow.flow_id
+            )
+            events.append(event)
       except (dpkt.UnpackError, dpkt.NeedData):
         continue
   return events

@@ -38,11 +38,11 @@ class Packet(BaseModel):
     tcp_flags: int = 0
 
 class Flow(BaseModel):
-    flow_id: str                    #hash
+    flow_id: str
     src_ip: str
     dst_ip: str
-    src_port: int
-    dst_port: int
+    src_port: int | None  ## for icmp packets they dont have port values
+    dst_port: int | None
     protocol: Protocol
     start_ts: float
     end_ts: float

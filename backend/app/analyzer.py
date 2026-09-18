@@ -1,6 +1,6 @@
 from .models import Event, Finding, Flow
 
-def analyze_events_to_findings(events:list[Event],flows: list[Flows]) -> list[Finding]:
+def analyze_events_to_findings(events:list[Event],flows: list[Flow]) -> list[Finding]:
     findings: list[Finding] = []
     for ev in events:
         flow = next((f for f in flows if f.flow_id == ev.flow_id), None)

@@ -18,34 +18,38 @@ def parse_one_packet(
         return None
 
     ip = eth.data
-    segment = ip.data
 
     src_port: int | None = None
     dst_port: int | None = None
 
-    if isinstance(segment, dpkt.tcp.TCP):
-        protocol = "TCP"
-        src_port = segment.sport
-        dst_port = segment.dport
-        payload = bytes(segment.data)
+    protocol = {1: "ICMP", 6: "TCP", 17: "UDP"}.get(ip.p, "OTHER")
+    is_non_first_fragment = (ip.off & 0x1FFF) != 0
 
-    elif isinstance(segment, dpkt.udp.UDP):
-        protocol = "UDP"
-        src_port = segment.sport
-        dst_port = segment.dport
-        payload = bytes(segment.data)
-
-    elif isinstance(segment, dpkt.icmp.ICMP):
-        protocol = "ICMP"
-        payload = bytes(segment.data)
-
+    # Non-first fragments do not contain a transport header.
+    if is_non_first_fragment:
+        payload = bytes(ip.data)
+    elif protocol in ("TCP", "UDP", "ICMP"):
+        try:
+            transport_data = bytes(ip.data)
+            if protocol == "TCP":
+                transport = dpkt.tcp.TCP(transport_data)
+                src_port = transport.sport
+                dst_port = transport.dport
+                payload = bytes(transport.data)
+            elif protocol == "UDP":
+                transport = dpkt.udp.UDP(transport_data)
+                src_port = transport.sport
+                dst_port = transport.dport
+                payload = bytes(transport.data)
+            else:
+                transport = dpkt.icmp.ICMP(transport_data)
+                payload = bytes(transport.data)
+        except (dpkt.dpkt.UnpackError, dpkt.dpkt.NeedData):
+            src_port = None
+            dst_port = None
+            payload = bytes(ip.data)
     else:
-        protocol = "OTHER"
-        payload = (
-            bytes(segment.data)
-            if hasattr(segment, "data")
-            else bytes(segment)
-        )
+        payload = bytes(ip.data)
 
     return Packet(
         packet_id=packet_id,
