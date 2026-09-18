@@ -3,6 +3,12 @@ from .models import Packet, Flow
 ### functions to analyze full sessions of tcp rather than having the user read 300+ raws
 
 def flow_key(packet: Packet) -> tuple[str, str, int | None, int | None, str]:
+    try:
+        assert packet.src_ip is not None
+        assert packet.dst_ip is not None
+        assert packet.protocol is not None
+    except AssertionError:
+        raise ValueError("Packet must have src_ip, dst_ip, and protocol defined")
     return (
         packet.src_ip,
         packet.dst_ip,
@@ -14,7 +20,6 @@ def flow_key(packet: Packet) -> tuple[str, str, int | None, int | None, str]:
 def sessionize(packets: list[Packet]) ->  list[Flow]:
     flows_dict = {}
     for packet in packets:
-       ## false into the same conversation
       flow_key = flow_key(packet)
       if flow_key not in flows_dict:
             flows_dict[flow_key] = Flow(
@@ -36,5 +41,12 @@ def sessionize(packets: list[Packet]) ->  list[Flow]:
             flow.packet_count += 1
             flow.byte_count += packet.length
             flow.end_ts = max(flow.end_ts, packet.ts) ## sets the conversation end time to the latest packet timestamp
+    else:
+        # If the flow already exists, add the packet to it
+        flow = flows_dict[flow_key]
+        flow.packets.append(packet)
+        flow.packet_count += 1
+        flow.byte_count += packet.length
+        flow.end_ts = max(flow.end_ts, packet.ts)
 
     return list(flows_dict.values())

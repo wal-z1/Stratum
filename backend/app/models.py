@@ -34,6 +34,7 @@ class Packet(BaseModel):
     dst_port: int | None = None
     protocol: Protocol
     payload: bytes | None = None
+    length:int = 0
     tcp_flags: int = 0
 
 class Flow(BaseModel):
