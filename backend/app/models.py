@@ -48,6 +48,7 @@ class Flow(BaseModel):
     packets: list[Packet] = Field(default_factory=list)
     packet_count: int = 0
     byte_count: int = 0
+    dns_name: str | None = None
 
 class Event(BaseModel):
     id: str

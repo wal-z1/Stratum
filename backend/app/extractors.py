@@ -176,11 +176,18 @@ def export_tcp_flags(flow:Flow) -> list[Event]:
 
   return events
 
-
 def export_tls_flows(flow:Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
     if packet.protocol == "TCP" and isinstance(packet.payload, bytes):
+
+      if (
+        len(packet.payload) < 5
+        or packet.payload[0] not in (20, 21, 22, 23, 24)
+        or packet.payload[1] != 3
+      ):
+        continue
+
       try:
         tls = dpkt.ssl.TLS(packet.payload)
 
@@ -192,96 +199,62 @@ def export_tls_flows(flow:Flow) -> list[Event]:
           summary=f"TLS message type {getattr(tls, 'type', 0)}",
           details={
             "version": getattr(tls, "version", None),
-            "length": getattr(tls, "length", None)
+            "length": getattr(tls, "len", None)
           },
           flow_id=flow.flow_id
         )
         events.append(event)
+
       except (dpkt.UnpackError, dpkt.NeedData):
         continue
+
   return events
-
-
 def export_smtp_ftp_imap_flows(flow:Flow) -> list[Event]:
   events = []
 
   for packet in flow.packets:
     if packet.protocol == "TCP" and isinstance(packet.payload, bytes):
       try:
+        payload = packet.payload
+        source = None
 
-        # Check for SMTP
-        if packet.payload.startswith(b"220") or packet.payload.startswith(b"250"):
+        # SMTP
+        if payload.startswith(b"250"):
+          source = "smtp"
+
+        # FTP
+        elif payload.startswith(b"331"):
+          source = "ftp"
+
+        # 220 can belong to either SMTP or FTP
+        elif payload.startswith(b"220"):
+          lower_payload = payload.lower()
+
+          if b"ftp" in lower_payload:
+            source = "ftp"
+
+          elif b"smtp" in lower_payload or b"esmtp" in lower_payload:
+            source = "smtp"
+
+        # IMAP
+        elif payload.startswith(b"* OK") or payload.startswith(b"* NO"):
+          source = "imap"
+
+        if source:
+          decoded_payload = payload.decode(errors="ignore")
+
           event = Event(
             id=f"{flow.flow_id}-{packet.packet_id}",
             ts=packet.ts,
-            source="smtp",
+            source=source,
             kind="message",
-            summary=f"SMTP message: {packet.payload.decode(errors='ignore')}",
+            summary=f"{source.upper()} message: {decoded_payload}",
             details={
-              "payload": packet.payload.decode(errors='ignore')
+              "payload": decoded_payload
             },
             flow_id=flow.flow_id
           )
           events.append(event)
-
-        # Check for FTP
-        elif packet.payload.startswith(b"220") or packet.payload.startswith(b"331"):
-          event = Event(
-            id=f"{flow.flow_id}-{packet.packet_id}",
-            ts=packet.ts,
-            source="ftp",
-            kind="message",
-            summary=f"FTP message: {packet.payload.decode(errors='ignore')}",
-            details={
-              "payload": packet.payload.decode(errors='ignore')
-            },
-            flow_id=flow.flow_id
-          )
-          events.append(event)
-
-        # Check for IMAP
-        elif packet.payload.startswith(b"* OK") or packet.payload.startswith(b"* NO"):
-          event = Event(
-            id=f"{flow.flow_id}-{packet.packet_id}",
-            ts=packet.ts,
-            source="imap",
-            kind="message",
-            summary=f"IMAP message: {packet.payload.decode(errors='ignore')}",
-            details={
-              "payload": packet.payload.decode(errors='ignore')
-            },
-            flow_id=flow.flow_id
-          )
-          events.append(event)
-
-      except (dpkt.UnpackError, dpkt.NeedData):
-        continue
-
-  return events
-
-
-def export_smb_flows(flow:Flow) -> list[Event]:
-  events = []
-
-  for packet in flow.packets:
-    if packet.protocol == "TCP" and isinstance(packet.payload, bytes):
-      try:
-        smb = dpkt.smb.SMB(packet.payload)
-
-        event = Event(
-          id=f"{flow.flow_id}-{packet.packet_id}",
-          ts=packet.ts,
-          source="smb",
-          kind="message",
-          summary=f"SMB message type {getattr(smb, 'command', 0)}",
-          details={
-            "command": getattr(smb, "command", None),
-            "flags": getattr(smb, "flags", None),
-            "flags2": getattr(smb, "flags2", None)
-          },
-          flow_id=flow.flow_id
-        )
-        events.append(event)
 
       except (dpkt.UnpackError, dpkt.NeedData):
         continue
