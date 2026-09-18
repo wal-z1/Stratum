@@ -2,12 +2,32 @@ from .models import Flow, Packet, Event, Finding
 import dpkt
 import dpkt.utils
 
+
+HTTP_PORTS  = {80, 8000, 8080, 8888}
+DNS_PORTS   = {53, 5353}
+DHCP_PORTS  = {67, 68}
+TLS_PORTS   = {443, 8443, 993, 995, 465, 636, 990}
+SMTP_PORTS  = {25, 587, 465}
+FTP_PORTS   = {20, 21}
+IMAP_PORTS  = {143, 993}
+
+
+def _in_ports(packet, ports) -> bool:
+    sport = getattr(packet, "sport", None)
+    dport = getattr(packet, "dport", None)
+    return sport in ports or dport in ports
+
+
 ## export useful data of the flow's packets
 
-def export_http_flows(flow:Flow) ->list[Event]:
+def export_http_flows(flow: Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
-    if packet.protocol == "TCP" and isinstance(packet.payload, bytes):
+    if (
+      packet.protocol == "TCP"
+      and _in_ports(packet, HTTP_PORTS)
+      and isinstance(packet.payload, bytes)
+    ):
       try:
         http = dpkt.http.Request(packet.payload)
         event = Event(
@@ -28,10 +48,14 @@ def export_http_flows(flow:Flow) ->list[Event]:
   return events
 
 
-def export_dns_flows(flow:Flow) -> list[Event]:
+def export_dns_flows(flow: Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
-    if packet.protocol == "UDP" and isinstance(packet.payload, bytes):
+    if (
+      packet.protocol == "UDP"
+      and _in_ports(packet, DNS_PORTS)
+      and isinstance(packet.payload, bytes)
+    ):
       try:
         dns = dpkt.dns.DNS(packet.payload)
         if dns.qr == dpkt.dns.DNS_Q and dns.opcode == dpkt.dns.DNS_QUERY:
@@ -50,38 +74,46 @@ def export_dns_flows(flow:Flow) -> list[Event]:
             )
             events.append(event)
         elif dns.qr == dpkt.dns.DNS_R:
-        answers = []
-        for ans in dns.an:
+          answers = []
+          for ans in dns.an:
             ip = None
             if getattr(ans, "ip", None):
-                ip = dpkt.utils.inet_to_str(ans.ip)
+              ip = dpkt.utils.inet_to_str(ans.ip)
             elif getattr(ans, "ip6", None):
-                ip = dpkt.utils.inet_to_str(ans.ip6)
-            answers.append({"name": ans.name, "ip": ip, "type": ans.type, "ttl": ans.ttl})
-        if answers:
+              ip = dpkt.utils.inet_to_str(ans.ip6)
+            answers.append({
+              "name": ans.name,
+              "ip": ip,
+              "type": ans.type,
+              "ttl": ans.ttl
+            })
+          if answers:
             events.append(Event(
-                id=f"{flow.flow_id}-{packet.packet_id}",
-                ts=packet.ts,
-                source="dns",
-                kind="response",
-                summary=f"DNS response for {answers[0]['name']}",
-                details={
-                    "name": dns.qd[0].name if dns.qd else answers[0]["name"],
-                    "rcode": dns.rcode,
-                    "answers": answers,
-                },
-                flow_id=flow.flow_id,
+              id=f"{flow.flow_id}-{packet.packet_id}",
+              ts=packet.ts,
+              source="dns",
+              kind="response",
+              summary=f"DNS response for {answers[0]['name']}",
+              details={
+                "name": dns.qd[0].name if dns.qd else answers[0]["name"],
+                "rcode": dns.rcode,
+                "answers": answers,
+              },
+              flow_id=flow.flow_id,
             ))
-            events.append(event)
       except (dpkt.UnpackError, dpkt.NeedData):
         continue
   return events
 
 
-def export_dhcp_flows(flow:Flow) -> list[Event]:
+def export_dhcp_flows(flow: Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
-    if packet.protocol == "UDP" and isinstance(packet.payload, bytes):
+    if (
+      packet.protocol == "UDP"
+      and _in_ports(packet, DHCP_PORTS)
+      and isinstance(packet.payload, bytes)
+    ):
       try:
         dhcp = dpkt.dhcp.DHCP(packet.payload)
 
@@ -102,7 +134,7 @@ def export_dhcp_flows(flow:Flow) -> list[Event]:
   return events
 
 
-def export_arp_flows(flow:Flow) -> list[Event]:
+def export_arp_flows(flow: Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
     if packet.protocol == "OTHER" and isinstance(packet.payload, bytes):
@@ -129,7 +161,7 @@ def export_arp_flows(flow:Flow) -> list[Event]:
   return events
 
 
-def export_icmp_flows(flow:Flow) -> list[Event]:
+def export_icmp_flows(flow: Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
     if packet.protocol == "ICMP" and isinstance(packet.payload, bytes):
@@ -154,7 +186,7 @@ def export_icmp_flows(flow:Flow) -> list[Event]:
   return events
 
 
-def export_tcp_flags(flow:Flow) -> list[Event]:
+def export_tcp_flags(flow: Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
     if packet.protocol == "TCP":
@@ -200,10 +232,15 @@ def export_tcp_flags(flow:Flow) -> list[Event]:
 
   return events
 
-def export_tls_flows(flow:Flow) -> list[Event]:
+
+def export_tls_flows(flow: Flow) -> list[Event]:
   events = []
   for packet in flow.packets:
-    if packet.protocol == "TCP" and isinstance(packet.payload, bytes):
+    if (
+      packet.protocol == "TCP"
+      and _in_ports(packet, TLS_PORTS)
+      and isinstance(packet.payload, bytes)
+    ):
 
       if (
         len(packet.payload) < 5
@@ -233,11 +270,17 @@ def export_tls_flows(flow:Flow) -> list[Event]:
         continue
 
   return events
-def export_smtp_ftp_imap_flows(flow:Flow) -> list[Event]:
+
+
+def export_smtp_ftp_imap_flows(flow: Flow) -> list[Event]:
   events = []
 
   for packet in flow.packets:
-    if packet.protocol == "TCP" and isinstance(packet.payload, bytes):
+    if (
+      packet.protocol == "TCP"
+      and _in_ports(packet, SMTP_PORTS | FTP_PORTS | IMAP_PORTS)
+      and isinstance(packet.payload, bytes)
+    ):
       try:
         payload = packet.payload
         source = None
