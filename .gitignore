@@ -1,0 +1,176 @@
+# =========================
+# Node / React / Vite
+# =========================
+node_modules/
+.pnp
+.pnp.js
+.pnp.*
+.yarn/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnpm-store/
+.npm/
+
+.eslintcache
+.stylelintcache
+.cache/
+.parcel-cache/
+.vite/
+
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.nuxt/
+
+coverage/
+.nyc_output/
+*.lcov
+lib-cov/
+
+jspm_packages/
+web_modules/
+bower_components/
+
+*.tsbuildinfo
+vite.config.ts.timestamp-*
+
+*.local
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+
+# Root-level Python build/environment directories only.
+# Do NOT use "lib/" here because that would ignore
+# frontend/Startum/src/lib/
+ /lib/
+ /lib64/
+
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+
+pip-log.txt
+pip-delete-this-directory.txt
+
+.tox/
+.nox/
+
+.coverage
+.coverage.*
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pyre/
+.pytype/
+cython_debug/
+
+*.pyc
+*.pyo
+*.pyd
+
+# =========================
+# Virtual Environments
+# =========================
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+virtualenv/
+.conda/
+*.conda
+
+# =========================
+# Environment Variables
+# =========================
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.pid
+*.seed
+*.pid.lock
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+!.vscode/extensions.json
+.idea/
+
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*.sw?
+*~
+
+*.sublime-project
+*.sublime-workspace
+*.tmproj
+.project
+.classpath
+.settings/
+*.code-workspace
+
+# =========================
+# OS
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# =========================
+# Misc
+# =========================
+*.bak
+*.tmp
+*.temp
+*.cache
