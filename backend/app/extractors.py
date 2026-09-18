@@ -1,6 +1,20 @@
-from .models import Flow, Packet, Event, Finding
+from .models import Flow, Packet, Event
 import dpkt
 import dpkt.utils
+
+
+def extract_events(flows: list[Flow]) -> list[Event]:
+    events: list[Event] = []
+    for flow in flows:
+        events.extend(export_http_flows(flow))
+        events.extend(export_dns_flows(flow))
+        events.extend(export_tls_flows(flow))
+        events.extend(export_arp_flows(flow))
+        events.extend(export_dhcp_flows(flow))
+        events.extend(export_smtp_ftp_imap_flows(flow))
+        events.extend(export_icmp_flows(flow))
+        events.extend(export_tcp_flags(flow))
+    return events
 
 
 HTTP_PORTS  = {80, 8000, 8080, 8888}

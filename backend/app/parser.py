@@ -11,9 +11,11 @@ def parse_one_packet(
     ts: float,
     buf: bytes,
 ) -> Packet | None:
-    eth = dpkt.ethernet.Ethernet(buf)
+    try:
+        eth = dpkt.ethernet.Ethernet(buf)
+    except (dpkt.dpkt.UnpackError, dpkt.dpkt.NeedData, ValueError):
+        return None
 
-    # Currently only IPv4
     if not isinstance(eth.data, dpkt.ip.IP):
         return None
 
@@ -25,7 +27,6 @@ def parse_one_packet(
     protocol = {1: "ICMP", 6: "TCP", 17: "UDP"}.get(ip.p, "OTHER")
     is_non_first_fragment = (ip.off & 0x1FFF) != 0
 
-    # Non-first fragments do not contain a transport header.
     if is_non_first_fragment:
         payload = bytes(ip.data)
     elif protocol in ("TCP", "UDP", "ICMP"):
@@ -66,22 +67,38 @@ def parse_one_packet(
     )
 
 
+def _iter_capture_records(raw: bytes):
+    readers = (
+        dpkt.pcap.Reader,
+        getattr(getattr(dpkt, "pcapng", None), "Reader", None),
+    )
+    for reader in readers:
+        if reader is None:
+            continue
+        try:
+            stream = io.BytesIO(raw)
+            yield from reader(stream)
+            return
+        except (ValueError, dpkt.dpkt.NeedData, dpkt.dpkt.UnpackError, OSError):
+            continue
+
+    raise ValueError("Unsupported or corrupt capture")
+
+
 def pcap_file(raw: bytes) -> list[Packet]:
+    if not raw:
+        raise ValueError("PCAP data is empty")
+
     packets: list[Packet] = []
 
     try:
-        pcap = dpkt.pcap.Reader(io.BytesIO(raw))
-    except (ValueError, dpkt.dpkt.NeedData, dpkt.dpkt.UnpackError):
-        return []
-
-    for packet_id, (ts, buf) in enumerate(pcap):
-        try:
+        for packet_id, (ts, buf) in enumerate(_iter_capture_records(raw)):
             packet = parse_one_packet(packet_id, ts, buf)
-        except (dpkt.dpkt.NeedData, dpkt.dpkt.UnpackError):
-            # Skip malformed packets
-            continue
-
-        if packet is not None:
-            packets.append(packet)
+            if packet is not None:
+                packets.append(packet)
+    except ValueError:
+        raise
+    except (dpkt.dpkt.NeedData, dpkt.dpkt.UnpackError):
+        raise ValueError("Unsupported or corrupt capture") from None
 
     return packets
